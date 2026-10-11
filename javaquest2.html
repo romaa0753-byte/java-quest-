@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Java Quest 2</title>
+	<link rel="stylesheet" href="javaquest2.css">
+	<script src="javaquest2.js" defer></script>
+</head>
+<body>
+	<main class="game-shell">
+		<header class="topbar">
+			<span class="brand">JQ // Arcade</span>
+			<span class="status" id="round-label">Etapa 1/2</span>
+		</header>
+
+		<section class="stage playing" id="stage" aria-label="Jogo de perguntas Java Quest 2">
+			<div class="timeout-overlay" id="timeout-overlay" hidden>
+				<img src="ftof/transferir (1).jpeg" alt="Erro 404: página não encontrada">
+				<p>Tempo esgotado! Reiniciando o Java Quest...</p>
+			</div>
+			<div class="quiz" id="quiz" aria-live="polite">
+				<div class="quiz-meta">
+					<span id="question-count">TELA 1/2 • PERGUNTA 1 DE 8</span>
+					<span id="score-label">PONTOS: 0</span>
+					<span class="timer-label" id="timer-label">TEMPO: 10s</span>
+				</div>
+				<div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+
+				<div id="question-view">
+					<p class="question-category" id="question-category"></p>
+					<h2 class="question-title" id="question-title"></h2>
+					<pre class="question-code" id="question-code" hidden></pre>
+					<div class="answers" id="answers"></div>
+					<div class="quiz-actions">
+						<div class="feedback" id="feedback" aria-live="polite"></div>
+						<button class="next-button" id="next-button" type="button">Próxima →</button>
+					</div>
+				</div>
+
+				<section class="result" id="result" aria-live="polite">
+					<p class="eyebrow">Fim do desafio</p>
+					<h2 class="question-title">Sua pontuação</h2>
+					<p class="result-score" id="result-score">0/11</p>
+					<p class="subtitle" id="result-message"></p>
+					<h3 class="review-heading">Respostas e explicações</h3>
+					<div class="review-list" id="review-list"></div>
+					<button class="start-button" id="restart-button" type="button">↻ &nbsp; Jogar de novo</button>
+				</section>
+			</div>
+		</section>
+
+		<footer class="bottombar">
+			<span>11 PERGUNTAS • 2 TELAS</span>
+			<span>Java • Fundamentos • POO</span>
+		</footer>
+	</main>
+</body>
+</html>

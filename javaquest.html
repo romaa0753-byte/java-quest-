@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Java Quest</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+		:root {
+			color-scheme: dark;
+			--ink: #fffdf2;
+			--muted: #d8e8c9;
+			--lime: #d9ff38;
+			--orange: #ff674d;
+			--night: #0b171b;
+			--panel: #153036;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			min-height: 100vh;
+			margin: 0;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			overflow-x: hidden;
+			color: var(--ink);
+			background-color: var(--night);
+			background-image: linear-gradient(rgba(10, 23, 25, .72), rgba(10, 23, 25, .86)),
+				repeating-linear-gradient(0deg, transparent 0 39px, rgba(217, 255, 56, .12) 40px),
+				repeating-linear-gradient(90deg, transparent 0 39px, rgba(217, 255, 56, .12) 40px);
+			font-family: 'Space Grotesk', sans-serif;
+		}
+
+		.game-shell {
+			width: min(100%, 900px);
+			border: 1px solid #354347;
+			background: var(--panel);
+			box-shadow: 12px 12px 0 rgba(0, 0, 0, .24);
+		}
+
+		.topbar {
+			min-height: 56px;
+			padding: 0 20px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			border-bottom: 1px solid #354347;
+			color: var(--muted);
+			font-size: 12px;
+			font-weight: 700;
+			letter-spacing: 1.5px;
+			text-transform: uppercase;
+		}
+
+		.brand { color: var(--lime); }
+		.status { display: flex; align-items: center; gap: 8px; }
+		.status::before {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: var(--orange);
+			content: '';
+		}
+
+		.stage {
+			position: relative;
+			min-height: 510px;
+			display: grid;
+			place-items: center;
+			overflow: hidden;
+			background: #24766c;
+			isolation: isolate;
+		}
+
+		#game-canvas {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			image-rendering: pixelated;
+		}
+
+		.intro {
+			position: relative;
+			z-index: 1;
+			width: min(100% - 32px, 540px);
+			padding: 34px 28px;
+			text-align: center;
+			background: rgba(11, 25, 28, .92);
+			border: 1px solid rgba(217, 255, 56, .75);
+			box-shadow: 8px 8px 0 rgba(0, 0, 0, .25);
+			animation: rise-in .55s ease-out both;
+		}
+
+		.eyebrow {
+			margin: 0 0 20px;
+			color: var(--orange);
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: 3px;
+			text-transform: uppercase;
+		}
+
+		h1 {
+			margin: 0;
+			color: var(--lime);
+			font-family: 'Press Start 2P', monospace;
+			font-size: clamp(28px, 7vw, 50px);
+			line-height: 1.45;
+			text-shadow: 4px 4px 0 #647c1e;
+		}
+
+		.subtitle {
+			max-width: 390px;
+			margin: 18px auto 26px;
+			color: #d5dfd2;
+			font-size: 16px;
+			line-height: 1.6;
+		}
+
+		.start-button {
+			min-width: 190px;
+			padding: 16px 24px;
+			border: 0;
+			color: #14201b;
+			background: var(--lime);
+			box-shadow: 5px 5px 0 #78951c;
+			cursor: pointer;
+			font: 700 14px 'Space Grotesk', sans-serif;
+			letter-spacing: 2px;
+			text-transform: uppercase;
+			transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+		}
+
+		.start-button:hover {
+			transform: translate(2px, 2px);
+			box-shadow: 3px 3px 0 #78951c;
+			background: #eaff8b;
+		}
+
+		.start-button:focus-visible { outline: 3px solid white; outline-offset: 5px; }
+
+		.hud {
+			position: absolute;
+			z-index: 2;
+			inset: 16px 18px auto;
+			display: none;
+			justify-content: space-between;
+			color: white;
+			font-size: 13px;
+			font-weight: 700;
+			text-shadow: 1px 2px 2px #14201b;
+		}
+
+		.stage.playing .hud { display: flex; }
+		.stage.playing .intro { display: none; }
+		.quiz {
+			display: none;
+			position: relative;
+			z-index: 1;
+			width: min(100% - 36px, 680px);
+			padding: 28px;
+			border: 1px solid rgba(214, 243, 106, .45);
+			background: rgba(16, 25, 27, .94);
+			box-shadow: 8px 8px 0 rgba(0, 0, 0, .25);
+		}
+
+		.stage.playing .quiz { display: block; }
+		.quiz-meta, .quiz-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+		.quiz-meta { margin-bottom: 24px; color: var(--muted); font-size: 12px; font-weight: 700; }
+		.progress-track { height: 7px; margin-bottom: 28px; overflow: hidden; background: #344448; }
+		.progress-fill { width: 0; height: 100%; background: var(--lime); transition: width .25s ease; }
+		.question-category { margin: 0 0 12px; color: var(--orange); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+		.question-title { margin: 0 0 22px; color: var(--ink); font-size: clamp(19px, 3vw, 25px); line-height: 1.4; }
+		.question-code { margin: -8px 0 20px; padding: 14px; overflow-x: auto; border-left: 3px solid var(--lime); color: #d5dfd2; background: #202e31; font: 12px/1.55 Consolas, monospace; white-space: pre; }
+		.answers { display: grid; gap: 10px; }
+		.answer-button {
+			width: 100%;
+			min-height: 52px;
+			padding: 10px 14px;
+			display: flex;
+			align-items: center;
+			gap: 13px;
+			border: 1px solid #526267;
+			color: var(--ink);
+			background: #202e31;
+			cursor: pointer;
+			text-align: left;
+			font: 500 15px 'Space Grotesk', sans-serif;
+			transition: border-color .15s ease, background .15s ease;
+		}
+		.answer-button:hover:not(:disabled) { border-color: var(--lime); background: #293a3b; }
+		.answer-button:focus-visible, .next-button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+		.answer-button:disabled { cursor: default; }
+		.answer-key { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border: 1px solid #526267; color: var(--lime); font-size: 12px; font-weight: 700; }
+		.answer-button.correct { border-color: var(--lime); background: #34452e; }
+		.answer-button.incorrect { border-color: var(--orange); background: #492f2b; }
+		.feedback { min-height: 64px; padding-top: 15px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+		.feedback strong { display: block; margin-bottom: 3px; color: var(--lime); }
+		.feedback.wrong strong { color: var(--orange); }
+		.next-button { display: none; padding: 12px 18px; border: 0; color: #14201b; background: var(--lime); cursor: pointer; font: 700 13px 'Space Grotesk', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+		.next-button.visible { display: inline-block; }
+		.result { display: none; text-align: center; }
+		.result.visible { display: block; }
+		.result-score { margin: 24px 0; color: var(--lime); font-family: 'Press Start 2P', monospace; font-size: clamp(32px, 8vw, 54px); }
+		.result .question-title { margin-bottom: 10px; }
+		body.landing-page .topbar,
+		body.landing-page .bottombar,
+		body.landing-page .intro > .eyebrow,
+		body.landing-page .intro > .subtitle,
+		body.landing-page .quiz { display: none !important; }
+
+		.bottombar {
+			min-height: 58px;
+			padding: 12px 20px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.keys { display: flex; align-items: center; gap: 7px; }
+		kbd {
+			min-width: 27px;
+			padding: 5px 7px;
+			border: 1px solid #526267;
+			color: var(--ink);
+			background: #202e31;
+			text-align: center;
+			font: 600 11px 'Space Grotesk', sans-serif;
+		}
+
+		@keyframes rise-in {
+			from { opacity: 0; transform: translateY(12px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
+
+		@media (max-width: 560px) {
+			body { padding: 12px; }
+			.stage { min-height: 430px; }
+			.topbar, .bottombar { padding-right: 12px; padding-left: 12px; }
+			.topbar { font-size: 10px; letter-spacing: 1px; }
+			.bottombar { align-items: flex-start; flex-direction: column; }
+			.intro { padding: 28px 18px; }
+			.quiz { width: min(100% - 20px, 680px); padding: 20px 16px; }
+			.quiz-meta { margin-bottom: 18px; }
+			.progress-track { margin-bottom: 21px; }
+		}
+	</style>
+</head>
+<body class="landing-page">
+	<main class="game-shell">
+		<header class="topbar">
+			<span class="brand">JQ // Arcade</span>
+			<span class="status" id="round-label">Etapa 1/2</span>
+		</header>
+
+		<section class="stage" id="stage" aria-label="Jogo de perguntas Java Quest">
+			<div class="intro">
+				<p class="eyebrow">Desafio de programação</p>
+				<h1>Java<br>Quest</h1>
+				<p class="subtitle">Responda às perguntas, teste seus conhecimentos de Java e descubra sua pontuação.</p>
+				<button class="start-button" id="start-button" type="button">▶ &nbsp; Start</button>
+			</div>
+			<div class="quiz" id="quiz" aria-live="polite">
+				<div class="quiz-meta"><span id="question-count">TELA 1/2 • PERGUNTA 1 DE 8</span><span id="score-label">PONTOS: 0</span></div>
+				<div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+				<div id="question-view">
+					<p class="question-category" id="question-category"></p>
+					<h2 class="question-title" id="question-title"></h2>
+					<pre class="question-code" id="question-code" hidden></pre>
+					<div class="answers" id="answers"></div>
+					<div class="quiz-actions"><div class="feedback" id="feedback"></div><button class="next-button" id="next-button" type="button">Próxima →</button></div>
+				</div>
+				<div class="result" id="result" aria-live="polite">
+					<p class="eyebrow">Fim do desafio</p>
+					<h2 class="question-title" id="result-title">Missão concluída!</h2>
+					<p class="result-score" id="result-score">0/8</p>
+					<p class="subtitle" id="result-message"></p>
+					<button class="start-button" id="restart-button" type="button">↻ &nbsp; Jogar de novo</button>
+				</div>
+			</div>
+		</section>
+
+		<footer class="bottombar">
+			<span>11 PERGUNTAS • 2 TELAS</span>
+			<span class="keys">Escolha uma alternativa para avançar</span>
+		</footer>
+	</main>
+
+	<script>
+		const stage = document.querySelector('#stage');
+		const startButton = document.querySelector('#start-button');
+		const questionCount = document.querySelector('#question-count');
+		const scoreLabel = document.querySelector('#score-label');
+		const progressFill = document.querySelector('#progress-fill');
+		const questionCategory = document.querySelector('#question-category');
+		const questionTitle = document.querySelector('#question-title');
+		const questionCode = document.querySelector('#question-code');
+		const roundLabel = document.querySelector('#round-label');
+		const answersContainer = document.querySelector('#answers');
+		const feedback = document.querySelector('#feedback');
+		const nextButton = document.querySelector('#next-button');
+		const questionView = document.querySelector('#question-view');
+		const result = document.querySelector('#result');
+		const resultScore = document.querySelector('#result-score');
+		const resultMessage = document.querySelector('#result-message');
+		const restartButton = document.querySelector('#restart-button');
+
+		const questions = [
+			{ category: 'Fundamentos', text: 'Qual palavra-chave é usada para criar uma classe em Java?', options: ['function', 'class', 'define', 'new'], answer: 1, explanation: 'A palavra-chave class declara uma classe em Java.' },
+			{ category: 'Tipos', text: 'Qual destes tipos guarda um número inteiro?', options: ['String', 'boolean', 'int', 'double'], answer: 2, explanation: 'int representa números inteiros, como 7 ou -12.' },
+			{ category: 'Saída', text: 'Qual comando mostra texto no console?', options: ['System.out.println()', 'Console.write()', 'print.line()', 'echo()'], answer: 0, explanation: 'System.out.println() imprime o conteúdo e pula para a próxima linha.' },
+			{ category: 'Conceitos', text: 'Qual valor uma variável boolean pode armazenar?', options: ['Qualquer texto', 'true ou false', 'Apenas números', 'Uma lista de valores'], answer: 1, explanation: 'O tipo boolean só aceita true ou false.' },
+			{ category: 'Repetição', text: 'Qual estrutura repete um bloco enquanto uma condição for verdadeira?', options: ['if', 'class', 'while', 'import'], answer: 2, explanation: 'O laço while continua executando enquanto a condição for verdadeira.' },
+			{ category: 'Arrays', text: 'Qual é o índice do primeiro elemento de um array?', options: ['0', '1', '-1', 'Depende do tamanho'], answer: 0, explanation: 'Em Java, os índices de arrays começam em zero.' },
+			{ category: 'Métodos', text: 'Qual palavra indica que um método não retorna valor?', options: ['null', 'empty', 'static', 'void'], answer: 3, explanation: 'void indica que o método termina sem retornar um valor.' },
+			{ category: 'Objetos', text: 'Qual palavra-chave cria uma nova instância de uma classe?', options: ['this', 'new', 'make', 'instance'], answer: 1, explanation: 'A palavra-chave new cria um objeto a partir de uma classe.' },
+			{ category: 'POO • Encapsulamento', text: 'Sobre encapsulamento em Java, qual alternativa está correta?', options: ['Todos os atributos ficam acessíveis diretamente por qualquer classe.', 'Esconder detalhes internos e controlar o acesso aos dados, geralmente com private.', 'Criar herança entre classes.', 'Impedir que uma classe tenha métodos públicos.', 'Permitir que uma classe herde de várias classes ao mesmo tempo.'], answer: 1, explanation: 'Encapsulamento protege o estado interno e controla o acesso, por exemplo usando atributos private e métodos públicos.' },
+			{ category: 'POO • Polimorfismo', text: 'Qual conceito de POO é demonstrado principalmente pelo código?', code: 'class Animal {\n    void emitirSom() {\n        System.out.println("Som do animal");\n    }\n}\n\nclass Cachorro extends Animal {\n    @Override\n    void emitirSom() {\n        System.out.println("Au au");\n    }\n}', options: ['Encapsulamento', 'Abstração', 'Polimorfismo por sobrescrita de método', 'Sobrecarga de métodos', 'Composição'], answer: 2, explanation: 'Cachorro sobrescreve emitirSom() de Animal. Isso é polimorfismo por sobrescrita de método.' },
+			{ category: 'POO • Abstração', text: 'Qual é a principal diferença entre uma classe abstrata e uma interface em Java?', options: ['Uma classe abstrata não pode possuir métodos, enquanto uma interface pode.', 'Uma interface pode ser instanciada diretamente, enquanto uma classe abstrata não pode.', 'Uma classe abstrata pode possuir estado e métodos concretos, enquanto uma interface define principalmente um contrato.', 'Uma classe pode herdar de várias classes abstratas ao mesmo tempo.', 'Interfaces não podem ser implementadas por classes.'], answer: 2, explanation: 'Uma classe abstrata pode manter estado e implementar métodos; uma interface define um contrato que classes podem implementar.' }
+		];
+		const firstScreenQuestionCount = 8;
+		let currentQuestion = 0;
+		let score = 0;
+		let answered = false;
+
+		function renderQuestion() {
+			const question = questions[currentQuestion];
+			const isSecondScreen = currentQuestion >= firstScreenQuestionCount;
+			const screenQuestionIndex = isSecondScreen ? currentQuestion - firstScreenQuestionCount : currentQuestion;
+			const screenQuestionCount = isSecondScreen ? questions.length - firstScreenQuestionCount : firstScreenQuestionCount;
+			answered = false;
+			questionCount.textContent = `TELA ${isSecondScreen ? 2 : 1}/2 • PERGUNTA ${screenQuestionIndex + 1} DE ${screenQuestionCount}`;
+			roundLabel.textContent = `Etapa ${isSecondScreen ? 2 : 1}/2`;
+			scoreLabel.textContent = `PONTOS: ${score}`;
+			progressFill.style.width = `${(currentQuestion / questions.length) * 100}%`;
+			questionCategory.textContent = question.category;
+			questionTitle.textContent = question.text;
+			questionCode.textContent = question.code || '';
+			questionCode.hidden = !question.code;
+			feedback.className = 'feedback';
+			feedback.textContent = '';
+			nextButton.classList.remove('visible');
+			answersContainer.replaceChildren();
+
+			question.options.forEach((option, index) => {
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'answer-button';
+				button.innerHTML = `<span class="answer-key">${String.fromCharCode(65 + index)}</span><span>${option}</span>`;
+				button.addEventListener('click', () => selectAnswer(index));
+				answersContainer.append(button);
+			});
+		}
+
+		function selectAnswer(selectedIndex) {
+			if (answered) return;
+			answered = true;
+			const question = questions[currentQuestion];
+			const answerButtons = answersContainer.querySelectorAll('.answer-button');
+			answerButtons.forEach((button, index) => {
+				button.disabled = true;
+				if (index === question.answer) button.classList.add('correct');
+			});
+
+			if (selectedIndex === question.answer) {
+				score++;
+				feedback.classList.add('correct');
+				feedback.innerHTML = `<strong>Resposta certa!</strong>${question.explanation}`;
+			} else {
+				answerButtons[selectedIndex].classList.add('incorrect');
+				feedback.classList.add('wrong');
+				feedback.innerHTML = `<strong>Quase!</strong>${question.explanation}`;
+			}
+			scoreLabel.textContent = `PONTOS: ${score}`;
+			nextButton.textContent = currentQuestion === questions.length - 1 ? 'Ver resultado →' : 'Próxima →';
+			nextButton.classList.add('visible');
+		}
+
+		function showResult() {
+			questionView.style.display = 'none';
+			result.classList.add('visible');
+			progressFill.style.width = '100%';
+			questionCount.textContent = 'DESAFIO CONCLUÍDO';
+			resultScore.textContent = `${score}/${questions.length}`;
+			resultMessage.textContent = score === questions.length
+				? 'Perfeito! Você domina os fundamentos e conceitos de POO em Java.'
+				: score >= Math.ceil(questions.length * 0.6)
+					? 'Mandou bem! Continue praticando para dominar Java.'
+					: 'Boa tentativa! Revise os conceitos e tente novamente.';
+		}
+
+		function startGame() {
+			currentQuestion = 0;
+			score = 0;
+			questionView.style.display = 'block';
+			result.classList.remove('visible');
+			stage.classList.add('playing');
+			renderQuestion();
+		}
+
+		function advanceQuestion() {
+			if (currentQuestion === questions.length - 1) {
+				showResult();
+				return;
+			}
+			currentQuestion++;
+			renderQuestion();
+		}
+
+		startButton.addEventListener('click', () => {
+			window.location.href = 'javaquest2.html';
+		});
+		restartButton.addEventListener('click', startGame);
+		nextButton.addEventListener('click', advanceQuestion);
+	</script>
+</body>
+</html>
